@@ -1,18 +1,11 @@
 package com.khathabook.service;
 
-import ai.onnxruntime.*;
 import com.khathabook.dto.AiProductResponse;
 import com.khathabook.model.Product;
 import com.khathabook.repository.ProductRepository;
-import com.khathabook.ai.utils.ImagePreprocessor;
-import com.khathabook.ai.utils.LabelMapper;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
-import java.nio.FloatBuffer;
 import java.util.Optional;
 
 @Service
