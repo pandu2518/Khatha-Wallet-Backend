@@ -37,6 +37,7 @@ public class SecurityConfig {
         // Allow Netlify frontend + localhost dev
         config.setAllowedOrigins(List.of(
             "https://khathawallet.netlify.app",
+            "http://localhost:5188",
             "http://localhost:5173",
             "http://localhost:3000"
         ));
