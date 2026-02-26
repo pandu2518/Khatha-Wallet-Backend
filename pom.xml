@@ -98,18 +98,7 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-messaging</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.microsoft.onnxruntime</groupId>
-            <artifactId>onnxruntime</artifactId>
-            <version>1.16.3</version>
-        </dependency>
 
-		<!-- 📖 OCR (Tesseract) -->
-		<dependency>
-			<groupId>net.sourceforge.tess4j</groupId>
-			<artifactId>tess4j</artifactId>
-			<version>5.9.0</version>
-		</dependency>
 
 		<!-- 🖼️ WebP Support -->
 		<dependency>
