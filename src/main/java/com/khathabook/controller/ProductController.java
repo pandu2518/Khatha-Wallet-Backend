@@ -21,20 +21,17 @@ public class ProductController {
     private final StockService stockService;
     private final ProductRepository productRepository;
     private final RetailerRepository retailerRepository;
-    private final com.khathabook.service.AiProductService aiProductService;
 
     public ProductController(
             ProductService productService,
             StockService stockService,
             ProductRepository productRepository,
-            RetailerRepository retailerRepository,
-            com.khathabook.service.AiProductService aiProductService
+            RetailerRepository retailerRepository
     ) {
         this.productService = productService;
         this.stockService = stockService;
         this.productRepository = productRepository;
         this.retailerRepository = retailerRepository;
-        this.aiProductService = aiProductService;
     }
 
     // =================================================
