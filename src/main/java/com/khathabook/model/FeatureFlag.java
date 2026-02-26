@@ -1,16 +1,22 @@
 package com.khathabook.model;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 @Entity
 @Table(name = "feature_flags")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class FeatureFlag {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // Default Constructor
+    public FeatureFlag() {}
+
+    // All-args Constructor
+    public FeatureFlag(Long id, String flagKey, boolean enabled, String description) {
+        this.id = id;
+        this.flagKey = flagKey;
+        this.enabled = enabled;
+        this.description = description;
+    }
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
