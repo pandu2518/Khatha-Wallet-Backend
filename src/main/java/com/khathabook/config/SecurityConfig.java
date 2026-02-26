@@ -21,8 +21,8 @@ public class SecurityConfig {
             // ❌ Disable CSRF (REST API)
             .csrf(csrf -> csrf.disable())
 
-            // ✅ Enable CORS
-            .cors(cors -> {})
+            // ✅ Enable CORS (Picks up from WebMvcConfigurer/CorsConfig.java)
+            .cors(org.springframework.security.config.Customizer.withDefaults())
 
             // ❌ Disable default login page
             .formLogin(form -> form.disable())
@@ -39,40 +39,12 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/**",
-                    "/auth/**"     // 🔥 ADD THIS FOR GOOGLE OAUTH
+                    "/auth/**",
+                    "/"
                 ).permitAll()
                 .anyRequest().permitAll()
             );
 
         return http.build();
-    }
-
-    // ✅ REQUIRED FOR FRONTEND (Vite) + FILE UPLOAD + GOOGLE CALLBACK
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-
-        CorsConfiguration config = new CorsConfiguration();
-
-        // Allow frontend (Vite default port)
-        // Allow ALL origins (Mobile, Localhost, Network) using Patterns
-        config.setAllowedOriginPatterns(List.of("*"));
-
-        // REMOVED setAllowedOrigins to avoid "IllegalArgumentException" with allowCredentials(true)
-        // config.setAllowedOrigins(List.of(...));
-
-        config.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS"
-        ));
-
-        config.setAllowedHeaders(List.of("*"));
-
-        config.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
-
-        source.registerCorsConfiguration("/**", config);
-
-        return source;
     }
 }
