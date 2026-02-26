@@ -1,22 +1,10 @@
 package com.khathabook.model;
 
+import jakarta.persistence.*;
+
 @Entity
 @Table(name = "feature_flags")
 public class FeatureFlag {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    // Default Constructor
-    public FeatureFlag() {}
-
-    // All-args Constructor
-    public FeatureFlag(Long id, String flagKey, boolean enabled, String description) {
-        this.id = id;
-        this.flagKey = flagKey;
-        this.enabled = enabled;
-        this.description = description;
-    }
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,6 +17,20 @@ public class FeatureFlag {
 
     private String description;
 
+    // Default Constructor
+    public FeatureFlag() {}
+
+    // All-args Constructor
+    public FeatureFlag(Long id, String flagKey, boolean enabled, String description) {
+        this.id = id;
+        this.flagKey = flagKey;
+        this.enabled = enabled;
+        this.description = description;
+    }
+
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
     public String getFlagKey() { return flagKey; }
     public void setFlagKey(String flagKey) { this.flagKey = flagKey; }
     public boolean isEnabled() { return enabled; }
