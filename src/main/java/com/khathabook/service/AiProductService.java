@@ -29,19 +29,21 @@ public class AiProductService {
     }
 
     @PostConstruct
-    public void init() throws OrtException {
+    public void init() {
         try {
             this.env = OrtEnvironment.getEnvironment();
             // Load model from resources
             InputStream modelStream = getClass().getResourceAsStream("/models/product-detect.onnx");
             if (modelStream == null) {
-                throw new RuntimeException("product-detect.onnx not found in resources!");
+                System.err.println("⚠️ [AI-INIT] product-detect.onnx not found in resources. AI will be disabled.");
+                return;
             }
             byte[] modelBytes = modelStream.readAllBytes();
             this.session = env.createSession(modelBytes, new OrtSession.SessionOptions());
-            System.out.println("✅ ONNX Model Loaded Successfully");
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load ONNX model", e);
+            System.out.println("✅ [AI-INIT] ONNX Model Loaded Successfully");
+        } catch (Throwable e) {
+            System.err.println("❌ [AI-INIT] Failed to load ONNX model. AI features will be skipped. Error: " + e.getMessage());
+            // We do NOT throw exception here, to allow the Rest of the app (Login, Billing) to start!
         }
     }
 
