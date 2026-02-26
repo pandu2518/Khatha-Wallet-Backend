@@ -13,4 +13,9 @@ public class HealthCheckController {
     public Map<String, String> ping() {
         return Map.of("status", "UP", "message", "Khatha Wallet Backend is Alive!");
     }
+
+    @GetMapping("/")
+    public String root() {
+        return "Backend is Online (Root Check Success)";
+    }
 }
