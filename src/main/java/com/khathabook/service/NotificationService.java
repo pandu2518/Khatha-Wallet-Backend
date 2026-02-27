@@ -5,93 +5,98 @@ import com.khathabook.model.Customer;
 import com.khathabook.model.Retailer;
 import com.khathabook.repository.CustomerRepository;
 import com.khathabook.repository.RetailerRepository;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import java.util.Map;
+import java.util.List;
 
 @Service
 public class NotificationService {
 
-    private final JavaMailSender mailSender;
     private final CustomerRepository customerRepo;
     private final RetailerRepository retailerRepo;
+    private final RestTemplate restTemplate;
+
+    @Value("${resend.api.key}")
+    private String resendApiKey;
 
     public NotificationService(
-            JavaMailSender mailSender,
             CustomerRepository customerRepo,
             RetailerRepository retailerRepo
     ) {
-        this.mailSender = mailSender;
         this.customerRepo = customerRepo;
         this.retailerRepo = retailerRepo;
+        this.restTemplate = new RestTemplate();
+    }
+
+    private void sendEmailViaResend(String toEmail, String subject, String textContent) {
+        if (resendApiKey == null || resendApiKey.isBlank()) {
+            System.out.println("⚠️ RESEND_API_KEY is not set. Skipping email to: " + toEmail);
+            return;
+        }
+
+        try {
+            String url = "https://api.resend.com/emails";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(resendApiKey);
+
+            // Using Map to automatically serialize to JSON via RestTemplate's message converters
+            Map<String, Object> body = Map.of(
+                "from", "KhathaBook <onboarding@resend.dev>",
+                "to", List.of(toEmail),
+                "subject", subject,
+                "html", textContent.replace("\n", "<br>") // Simple formatting for basic HTML
+            );
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+            restTemplate.postForEntity(url, request, String.class);
+            
+            System.out.println("✅ Email Sent Successfully via Resend to: " + toEmail);
+        } catch (Exception e) {
+            System.err.println("❌ Resend Email Failed: " + e.getMessage());
+        }
     }
 
     // ======================================================
     // ✅ OTP EMAIL
     // ======================================================
     public void sendOtpEmail(String toEmail, String otp) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-            helper.setFrom("KhathaBook <khathabook.noreply@gmail.com>");
-            helper.setTo(toEmail);
-            helper.setSubject("KhathaBook Login OTP");
-
-            helper.setText("""
-                    Hello,
-
-                    Your OTP is: %s
-
-                    Valid for 5 minutes.
-
-                    - KhathaBook
-                    """.formatted(otp), false);
-
-            mailSender.send(message);
-            System.out.println("✅ OTP Email Sent Successfully to: " + toEmail);
-
-        } catch (Exception e) {
-            // ⚠️ FALLBACK FOR DEV/NETWORK ISSUES
-            System.err.println("❌ OTP Email Failed: " + e.getMessage());
-            System.out.println("⚠️ [DEV MODE] OTP for " + toEmail + " is: " + otp);
-        }
+        System.out.println("⚠️ [DEV MODE] OTP for " + toEmail + " is: " + otp);
+        String html = """
+                Hello,
+                
+                Your OTP is: <strong>%s</strong>
+                
+                Valid for 5 minutes.
+                
+                - KhathaBook
+                """.formatted(otp);
+        sendEmailViaResend(toEmail, "KhathaBook Login OTP", html);
     }
 
     // ======================================================
-    // ✅ BILL EMAIL (🔥 SAFE VERSION)
+    // ✅ BILL EMAIL
     // ======================================================
     public void sendBillEmail(Bill bill, Long retailerId) {
-
         try {
             if (bill.getCustomer() == null) return;
 
-            Customer customer = customerRepo.findById(bill.getCustomer().getId())
-                    .orElse(null);
-
-            if (customer == null ||
-                customer.getEmail() == null ||
-                customer.getEmail().isBlank()) {
-                return;
-            }
+            Customer customer = customerRepo.findById(bill.getCustomer().getId()).orElse(null);
+            if (customer == null || customer.getEmail() == null || customer.getEmail().isBlank()) return;
 
             Retailer retailer = retailerRepo.findById(retailerId).orElse(null);
             if (retailer == null) return;
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-            helper.setFrom("KhathaBook <khathabook.noreply@gmail.com>");
-            helper.setTo(customer.getEmail());
-            helper.setSubject("Bill Details from KhathaBook");
-
-            helper.setText("""
+            String html = """
                     Hello %s,
-
+                    
                     Here are your bill details:
-
+                    
                     🧾 Bill No: %s
                     📅 Date: %s
                     🛒 Items: %s
@@ -99,7 +104,7 @@ public class NotificationService {
                     💵 Paid: ₹ %.2f
                     ⏳ Due: ₹ %.2f
                     📌 Status: %s
-
+                    
                     Regards,
                     %s
                     KhathaBook
@@ -113,12 +118,10 @@ public class NotificationService {
                     bill.getDueAmount(),
                     bill.getStatus(),
                     retailer.getEmail()
-            ), false);
+            );
 
-            mailSender.send(message);
-
+            sendEmailViaResend(customer.getEmail(), "Bill Details from KhathaBook", html);
         } catch (Exception e) {
-            // 🔒 NEVER FAIL BILL FLOW
             System.out.println("Bill email failed: " + e.getMessage());
         }
     }
@@ -127,42 +130,28 @@ public class NotificationService {
     // ✅ DUE REMINDER EMAIL
     // ======================================================
     public void sendDueAmountEmail(Long customerId, Long retailerId) {
-
         try {
             Customer customer = customerRepo.findById(customerId).orElse(null);
-            if (customer == null ||
-                customer.getEmail() == null ||
-                customer.getEmail().isBlank()) {
-                return;
-            }
+            if (customer == null || customer.getEmail() == null || customer.getEmail().isBlank()) return;
 
             Retailer retailer = retailerRepo.findById(retailerId).orElse(null);
             if (retailer == null) return;
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-            helper.setFrom("KhathaBook <khathabook.noreply@gmail.com>");
-            helper.setTo(customer.getEmail());
-            helper.setSubject("Payment Reminder – KhathaBook");
-
-            helper.setText("""
+            String html = """
                     Hello %s,
-
+                    
                     Pending Due Amount: ₹ %.2f
-
+                    
                     Please clear the payment at your convenience.
-
+                    
                     Regards,
                     %s
                     """.formatted(
                     customer.getName(),
                     customer.getDueAmount(),
                     retailer.getEmail()
-            ), false);
-
-            mailSender.send(message);
-
+            );
+            sendEmailViaResend(customer.getEmail(), "Payment Reminder – KhathaBook", html);
         } catch (Exception e) {
             System.out.println("Due reminder email failed: " + e.getMessage());
         }
@@ -175,14 +164,7 @@ public class NotificationService {
         try {
             if (retailer == null || retailer.getEmail() == null) return;
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
-
-            helper.setFrom("KhathaBook <khathabook.noreply@gmail.com>");
-            helper.setTo(retailer.getEmail());
-            helper.setSubject("New Order Received! 📦");
-
-            helper.setText("""
+            String html = """
                     New Order Alert!
                     
                     Order #%d from %s
@@ -193,15 +175,12 @@ public class NotificationService {
                     
                     Please check your dashboard to process this order.
                     """.formatted(
-                            order.getId(),
-                            order.getCustomer().getName(),
-                            order.getTotalAmount(),
-                            order.getItems()
-            ), false);
-
-            mailSender.send(message);
-            System.out.println("✅ New Order Email Sent to Retailer: " + retailer.getEmail());
-
+                    order.getId(),
+                    order.getCustomer().getName(),
+                    order.getTotalAmount(),
+                    order.getItems()
+            );
+            sendEmailViaResend(retailer.getEmail(), "New Order Received! 📦", html);
         } catch (Exception e) {
             System.err.println("❌ New Order Email Failed: " + e.getMessage());
         }
@@ -222,14 +201,15 @@ public class NotificationService {
                 default -> "ℹ️";
             };
 
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            String extraMessage = "";
+            if ("READY".equals(order.getStatus())) {
+                extraMessage = "Your order is ready for pickup! Please visit the store.";
+            } else if ("PACKED".equals(order.getStatus())) {
+                String otp = order.getDeliveryOtp() != null ? order.getDeliveryOtp() : "N/A";
+                extraMessage = "We have packed your items. \n\n🔐 **Your Delivery OTP is: " + otp + "**\n\nPlease share this OTP with the delivery agent.";
+            }
 
-            helper.setFrom("KhathaBook <khathabook.noreply@gmail.com>");
-            helper.setTo(customer.getEmail());
-            helper.setSubject("Order Update: " + order.getStatus() + " " + statusEmoji);
-
-            String body = """
+            String html = """
                     Hello %s,
                     
                     Your order #%d is now %s!
@@ -239,28 +219,16 @@ public class NotificationService {
                     %s
                     
                     - KhathaBook
-                    """;
-            
-            String extraMessage = "";
-            if ("READY".equals(order.getStatus())) {
-                extraMessage = "Your order is ready for pickup! Please visit the store.";
-            } else if ("PACKED".equals(order.getStatus())) {
-                String otp = order.getDeliveryOtp() != null ? order.getDeliveryOtp() : "N/A";
-                extraMessage = "We have packed your items. \n\n🔐 **Your Delivery OTP is: " + otp + "**\n\nPlease share this OTP with the delivery agent.";
-            }
-
-            helper.setText(body.formatted(
+                    """.formatted(
                     customer.getName(),
                     order.getId(),
                     order.getStatus(),
                     order.getStatus(),
                     statusEmoji,
                     extraMessage
-            ), false);
+            );
 
-            mailSender.send(message);
-            System.out.println("✅ Order Status Email Sent to Customer: " + customer.getEmail());
-
+            sendEmailViaResend(customer.getEmail(), "Order Update: " + order.getStatus() + " " + statusEmoji, html);
         } catch (Exception e) {
             System.err.println("❌ Order Status Email Failed: " + e.getMessage());
         }
