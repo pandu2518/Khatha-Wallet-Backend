@@ -79,7 +79,7 @@ public class NotificationService {
                 
                 - KhathaBook
                 """.formatted(otp);
-        sendEmailViaResend(toEmail, "KhathaBook Login OTP", html);
+        sendEmailViaBrevo(toEmail, "KhathaBook Login OTP", html);
     }
 
     // ======================================================
