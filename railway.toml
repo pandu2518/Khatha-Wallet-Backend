@@ -1,6 +1,9 @@
 [build]
 builder = "NIXPACKS"
 
+[build.nixpacksPlan.variables]
+PORT = "8080"
+
 [build.nixpacksPlan.phases.setup]
 nixPkgs = ["jdk21"]
 
