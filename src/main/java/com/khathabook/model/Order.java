@@ -15,12 +15,12 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = false)
     @JsonIgnoreProperties({"orders", "bills", "retailer"}) // Prevent recursion
     private Customer customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "retailer_id", nullable = false)
     @JsonIgnoreProperties({"orders", "bills", "customers"})
     private Retailer retailer;

@@ -52,7 +52,7 @@ public class Product {
 
     private int lowStockAlert = 10;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "retailer_id", nullable = false)
     @JsonIgnore
     private Retailer retailer;

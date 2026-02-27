@@ -34,7 +34,7 @@ public class Customer {
     private double schemeTargetAmount = 0.0;
     private int schemeMonthsPaid = 0; // Track count
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "retailer_id", nullable = false)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Retailer retailer;
