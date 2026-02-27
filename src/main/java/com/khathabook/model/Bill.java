@@ -49,12 +49,12 @@ public class Bill {
     private double discountAmount;      // ₹ value
     // ======================================================
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = true)
     @JsonIgnore
     private Customer customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "retailer_id", nullable = false)
     @JsonIgnore
     private Retailer retailer;
