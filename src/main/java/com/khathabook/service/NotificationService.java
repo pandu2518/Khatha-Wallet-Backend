@@ -21,8 +21,11 @@ public class NotificationService {
     private final RetailerRepository retailerRepo;
     private final RestTemplate restTemplate;
 
-    @Value("${resend.api.key}")
-    private String resendApiKey;
+    @Value("${brevo.api.key}")
+    private String brevoApiKey;
+
+    @Value("${brevo.sender.email}")
+    private String senderEmail;
 
     public NotificationService(
             CustomerRepository customerRepo,
@@ -33,32 +36,32 @@ public class NotificationService {
         this.restTemplate = new RestTemplate();
     }
 
-    private void sendEmailViaResend(String toEmail, String subject, String textContent) {
-        if (resendApiKey == null || resendApiKey.isBlank()) {
-            System.out.println("⚠️ RESEND_API_KEY is not set. Skipping email to: " + toEmail);
+    private void sendEmailViaBrevo(String toEmail, String subject, String textContent) {
+        if (brevoApiKey == null || brevoApiKey.isBlank()) {
+            System.out.println("⚠️ BREVO_API_KEY is not set. Skipping email to: " + toEmail);
             return;
         }
 
         try {
-            String url = "https://api.resend.com/emails";
+            String url = "https://api.brevo.com/v3/smtp/email";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(resendApiKey);
+            headers.set("api-key", brevoApiKey);
 
-            // Using Map to automatically serialize to JSON via RestTemplate's message converters
+            // Brevo expects a specific JSON structure
             Map<String, Object> body = Map.of(
-                "from", "KhathaBook <onboarding@resend.dev>",
-                "to", List.of(toEmail),
+                "sender", Map.of("name", "KhathaBook", "email", senderEmail),
+                "to", List.of(Map.of("email", toEmail)),
                 "subject", subject,
-                "html", textContent.replace("\n", "<br>") // Simple formatting for basic HTML
+                "htmlContent", textContent.replace("\n", "<br>")
             );
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
             restTemplate.postForEntity(url, request, String.class);
             
-            System.out.println("✅ Email Sent Successfully via Resend to: " + toEmail);
+            System.out.println("✅ Email Sent Successfully via Brevo to: " + toEmail);
         } catch (Exception e) {
-            System.err.println("❌ Resend Email Failed: " + e.getMessage());
+            System.err.println("❌ Brevo Email Failed: " + e.getMessage());
         }
     }
 
@@ -120,7 +123,7 @@ public class NotificationService {
                     retailer.getEmail()
             );
 
-            sendEmailViaResend(customer.getEmail(), "Bill Details from KhathaBook", html);
+            sendEmailViaBrevo(customer.getEmail(), "Bill Details from KhathaBook", html);
         } catch (Exception e) {
             System.out.println("Bill email failed: " + e.getMessage());
         }
@@ -151,7 +154,7 @@ public class NotificationService {
                     customer.getDueAmount(),
                     retailer.getEmail()
             );
-            sendEmailViaResend(customer.getEmail(), "Payment Reminder – KhathaBook", html);
+            sendEmailViaBrevo(customer.getEmail(), "Payment Reminder – KhathaBook", html);
         } catch (Exception e) {
             System.out.println("Due reminder email failed: " + e.getMessage());
         }
@@ -180,7 +183,7 @@ public class NotificationService {
                     order.getTotalAmount(),
                     order.getItems()
             );
-            sendEmailViaResend(retailer.getEmail(), "New Order Received! 📦", html);
+            sendEmailViaBrevo(retailer.getEmail(), "New Order Received! 📦", html);
         } catch (Exception e) {
             System.err.println("❌ New Order Email Failed: " + e.getMessage());
         }
@@ -228,7 +231,7 @@ public class NotificationService {
                     extraMessage
             );
 
-            sendEmailViaResend(customer.getEmail(), "Order Update: " + order.getStatus() + " " + statusEmoji, html);
+            sendEmailViaBrevo(customer.getEmail(), "Order Update: " + order.getStatus() + " " + statusEmoji, html);
         } catch (Exception e) {
             System.err.println("❌ Order Status Email Failed: " + e.getMessage());
         }
