@@ -46,7 +46,7 @@ public class NotificationService {
             String url = "https://api.brevo.com/v3/smtp/email";
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.set("api-key", brevoApiKey);
+            headers.set("api-key", brevoApiKey.trim());
 
             // Brevo expects a specific JSON structure
             Map<String, Object> body = Map.of(
