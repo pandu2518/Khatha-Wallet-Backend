@@ -42,11 +42,6 @@ public class NotificationService {
             return;
         }
 
-        System.out.println("🔍 DIAGNOSTIC: Raw API Key Length = " + brevoApiKey.length());
-        System.out.println("🔍 DIAGNOSTIC: Trimmed API Key Length = " + brevoApiKey.trim().length());
-        System.out.println("🔍 DIAGNOSTIC: API Key Starts With = '" + brevoApiKey.substring(0, Math.min(brevoApiKey.length(), 10)) + "...'");
-        System.out.println("🔍 DIAGNOSTIC: API Key Ends With = '..." + brevoApiKey.substring(Math.max(0, brevoApiKey.length() - 10)) + "'");
-        
         try {
             String url = "https://api.brevo.com/v3/smtp/email";
             HttpHeaders headers = new HttpHeaders();
